@@ -28,6 +28,7 @@ sed -i 's/#//g' forms
 # делаем список стемов (оснований слов)
 grep -v '{' LexGroup -r > stems        
 sed -i 's/^.*lexgroup\.//gI' stems  # удаляем название и путь файла в начале строки
+sed -i 's/#//g' forms
 
 #теперь собственно sqlite
 if [ -f ru.sqlite ];then rm ru.sqlite; fi
