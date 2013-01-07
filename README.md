@@ -5,12 +5,12 @@
 
 Прежде чем пользоваться не забудьте сгенерировать базу данных через <code>gen_db.sh</code>
 
-  >&gt;&gt;&gt; from morph import MorphDict
-  >&gt;&gt;&gt; ru = MorphDict()
-  >&gt;&gt;&gt; "ложить" in ru
-  False
-  >&gt;&gt;&gt; "класть" in ru
-  True
+  > &gt;&gt;&gt; from morph import MorphDict
+  > &gt;&gt;&gt; ru = MorphDict()
+  > &gt;&gt;&gt; "ложить" in ru
+  > False
+  > &gt;&gt;&gt; "класть" in ru
+  > True
 
 Сам бредогенератор запускается командой:
   
