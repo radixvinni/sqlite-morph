@@ -9,7 +9,7 @@ class MorphDict(object):
         self.conn.text_factory = str
         self.GET_ITEM = 'SELECT stem.rule FROM stem join form ON form.rule=stem.rule WHERE prefix||suffix = ?'
         self.ADD_ITEM = 'REPLACE INTO stem (rule, prefix) VALUES (?,?)'
-
+        self.SIMILAR = 'SELECT prefix||suffix FROM form JOIN stem ON stem.rule = form.rule WHERE form.rowid = (SELECT form FROM word WHERE word = ?) order by random() limit 1'
     def __contains__(self, key):
             return self.conn.execute(self.GET_ITEM, (key,)).fetchone() is not None
 
@@ -20,11 +20,10 @@ class MorphDict(object):
         return item[0]
 
     def replace(self, key):
-        item = self.conn.execute('SELECT stem.rule, form.suffix FROM stem join form ON form.rule=stem.rule WHERE prefix||suffix = ? limit 1', (key,)).fetchone()
+        item = self.conn.execute(self.SIMILAR, (key,)).fetchone()
         if item is None:
             return key
-        res = self.conn.execute('SELECT prefix FROM stem WHERE rule = ? order by random() limit 1', (item[0],)).fetchone()
-        return res[0] + item[1]
+        return item[0]
 
     def __setitem__(self, key, value):
             self.conn.execute(self.ADD_ITEM, (key, value))
