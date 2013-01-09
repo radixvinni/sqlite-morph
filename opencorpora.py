@@ -1,17 +1,41 @@
+#coding: utf-8
+from __future__ import unicode_literals
 from parse import load_json_or_xml_dict
+from itertools import izip
 import os
+
+LEMMA_PREFIXES = ["", "по", "наи"]
 
 parsed_dict = load_json_or_xml_dict('dict.opcorpora.xml')
 
 #lemmas = _join_lemmas(parsed_dict.lemmas, parsed_dict.links)
 
-gramtab = []
-paradigms = []
-words = []
+lemmas = parsed_dict.lemmas
 
-seen_tags = dict()
-seen_paradigms = dict()
+seen_tags = dict()      # tag string => id
+seen_paradigms = dict() # form => id
+paradigms = dict()  # form => paradigm
 
+def longest_common_substring(data):
+    """
+    Return a longest common substring of a list of strings::
+
+        >>> longest_common_substring(["apricot", "rice", "cricket"])
+        'ric'
+        >>> longest_common_substring(["apricot", "banana"])
+        'a'
+        >>> longest_common_substring(["foo", "bar", "baz"])
+        ''
+
+    See http://stackoverflow.com/questions/2892931/.
+    """
+    substr = ''
+    if len(data) > 1 and len(data[0]) > 0:
+        for i in range(len(data[0])):
+            for j in range(len(data[0])-i+1):
+                if j > len(substr) and all(data[0][i:i+j] in x for x in data):
+                    substr = data[0][i:i+j]
+    return substr
 
 def _to_paradigm(lemma):
     """
@@ -20,45 +44,32 @@ def _to_paradigm(lemma):
     """
     forms, tags = list(zip(*lemma))
     prefixes = [''] * len(tags)
-
     stem = os.path.commonprefix(forms)
-
     if stem == "":
         stem = longest_common_substring(forms)
         prefixes = [form[:form.index(stem)] for form in forms]
         if any(pref not in LEMMA_PREFIXES for pref in prefixes):
             stem = ""
             prefixes = [''] * len(tags)
-
     suffixes = (
         form[len(pref)+len(stem):]
         for form, pref in zip(forms, prefixes)
     )
-
     return stem, tuple(zip(suffixes, tags, prefixes))
 
 def get_form(para):
     return list(next(izip(*para)))
 
-for index, lemma in enumerate(lemmas):
-    stem, paradigm = _to_paradigm(lemma)
+tags=0;
+# 1. отыскивается в словаре стем, сответствующая лемме. считывается парадигма. заполняется.
+for lemma in lemmas.values():
+    stem, paradigm = _to_paradigm(lemma) 
+    form = tuple(set(get_form(paradigm)))
     for suff, tag, pref in paradigm:
         if tag not in seen_tags:
-            seen_tags[tag] = len(gramtab)
-            gramtab.append(tag)
-
-    # build paradigm index
-    if paradigm not in seen_paradigms:
-        seen_paradigms[paradigm] = len(paradigms)
-        paradigms.append(
-            tuple([(suff, seen_tags[tag], pref) for suff, tag, pref in paradigm])
-        )
-
-    para_id = seen_paradigms[paradigm]
-    popularity[para_id] += 1
-
-    for idx, (suff, tag, pref) in enumerate(paradigm):
-        form = pref+stem+suff
-        words.append(
-            (form, (para_id, idx))
-        )
+            seen_tags[tag] = tags
+            tags += 1
+    if form not in paradigms:
+        paradigms[form] = tuple([(suff, seen_tags[tag], pref) for suff, tag, pref in paradigm])
+    if form not in seen_paradigms:
+        print stem,'{',', '.join(form),'}'
