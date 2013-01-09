@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 from parse import load_json_or_xml_dict
 from itertools import izip
+from forms2 import seen_paradigms
 import os
 
 LEMMA_PREFIXES = ["", "по", "наи"]
@@ -13,7 +14,6 @@ parsed_dict = load_json_or_xml_dict('dict.opcorpora.xml')
 lemmas = parsed_dict.lemmas
 
 seen_tags = dict()      # tag string => id
-seen_paradigms = dict() # form => id
 paradigms = dict()  # form => paradigm
 
 def longest_common_substring(data):
@@ -61,15 +61,14 @@ def get_form(para):
     return list(next(izip(*para)))
 
 tags=0;
-# 1. отыскивается в словаре стем, сответствующая лемме. считывается парадигма. заполняется.
 for lemma in lemmas.values():
     stem, paradigm = _to_paradigm(lemma) 
-    form = tuple(set(get_form(paradigm)))
+    form = tuple(sorted(tuple(set(get_form(paradigm)))))
     for suff, tag, pref in paradigm:
         if tag not in seen_tags:
             seen_tags[tag] = tags
             tags += 1
     if form not in paradigms:
         paradigms[form] = tuple([(suff, seen_tags[tag], pref) for suff, tag, pref in paradigm])
-    if form not in seen_paradigms:
+    if form in seen_paradigms:
         print stem,'{',', '.join(form),'}'
