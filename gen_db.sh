@@ -3,7 +3,7 @@
 #find LexGroup -type f|while read i; do iconv -f WINDOWS-1251 -t UTF-8 "$i" >tmp; mv tmp "$i"; done 
 
 # делаем список из окончаний
-grep '{' LexGroup -r > forms        # собираем оглавление
+grep --exclude="*.md" '{' LexGroup -r > forms        # собираем оглавление
 sed -i 's/^.*lexgroup\.//gI' forms  # удаляем название и путь файла в начале строки
 sed -i 's/ .\+\.//gI' forms         # удаляем лишнее в конце строки
 
