@@ -1,20 +1,63 @@
 #coding: utf-8
 from __future__ import unicode_literals
 from parse import load_json_or_xml_dict
-from itertools import izip
-from forms2 import seen_paradigms
 import os
 
-LEMMA_PREFIXES = ["", "по", "наи"]
+def _join_lemmas(lemmas, links):
+    """
+    Combine linked lemmas to single lemma.
+    <link_types>
+        <type id="1">ADJF-ADJS</type> ясен - ясный
+        <type id="2">ADJF-COMP</type> ясный - яснее
+        <type id="3">INFN-VERB</type> учить - учил
+        <type id="4">INFN-PRTF</type> учить - учив
+        <type id="5">INFN-GRND</type> учить - учивший
+        <type id="6">PRTF-PRTS</type>
+        <type id="7">NAME-PATR</type> имя - отчество
+        <type id="8">PATR_MASC-PATR_FEMN</type>
+        <type id="9">SURN_MASC-SURN_FEMN</type>
+        <type id="10">SURN_MASC-SURN_PLUR</type>
+        <type id="11">PERF-IMPF</type>
+        <type id="12">ADJF-SUPR_ejsh</type>
+        <type id="13">PATR_MASC_FORM-PATR_MASC_INFR</type>
+        <type id="14">PATR_FEMN_FORM-PATR_FEMN_INFR</type>
+        <type id="15">ADJF_eish-SUPR_nai_eish</type>
+        <type id="16">ADJF-SUPR_ajsh</type>
+        <type id="17">ADJF_aish-SUPR_nai_aish</type>
+        <type id="18">ADJF-SUPR_suppl</type>
+        <type id="19">ADJF-SUPR_nai</type>
+        <type id="20">ADJF-SUPR_slng</type>
+    </link_types>
+    """
 
-parsed_dict = load_json_or_xml_dict('dict.opcorpora.xml')
+    EXCLUDED_LINK_TYPES = set(['7','12'])
+    ALLOWED_LINK_TYPES = set(['1','2','3','8','9','10'])
 
-#lemmas = _join_lemmas(parsed_dict.lemmas, parsed_dict.links)
+    moves = dict()
 
-lemmas = parsed_dict.lemmas
+    def move_lemma(from_id, to_id):
+        if str(from_id) not in lemmas: return
+        if str(to_id) not in lemmas: return
+        lm = lemmas[str(from_id)]
 
-seen_tags = dict()      # tag string => id
-paradigms = dict()  # form => paradigm
+        while to_id in moves:
+            to_id = moves[to_id]
+
+        lemmas[str(to_id)].extend(lm)
+        del lm[:]
+        moves[from_id] = to_id
+
+    for link_start, link_end, type_id in links:
+        if type_id in EXCLUDED_LINK_TYPES:
+            continue
+
+        if type_id not in ALLOWED_LINK_TYPES:
+            continue
+
+        move_lemma(link_end, link_start)
+
+    lemma_ids = sorted(lemmas.keys(), key=int)
+    return [lemmas[lemma_id] for lemma_id in lemma_ids if lemmas[lemma_id]]
 
 def longest_common_substring(data):
     """
@@ -57,18 +100,43 @@ def _to_paradigm(lemma):
     )
     return stem, tuple(zip(suffixes, tags, prefixes))
 
-def get_form(para):
-    return list(next(izip(*para)))
+LEMMA_PREFIXES = ["", "по", "наи"]
+print 'opening dict...'
+parsed_dict = load_json_or_xml_dict('dict.opcorpora.xml')
+lemmas = _join_lemmas(parsed_dict.lemmas, parsed_dict.links)
+#lemmas = parsed_dict.lemmas.values()
+seen_tags = dict()
+seen_paradigms = dict()
+stems = []
+tags = 0
+paradigms = 0
 
-tags=0;
-for lemma in lemmas.values():
-    stem, paradigm = _to_paradigm(lemma) 
-    form = tuple(sorted(tuple(set(get_form(paradigm)))))
+for lemma in lemmas:
+  if len(lemma)>0:
+    stem, paradigm = _to_paradigm(lemma)
     for suff, tag, pref in paradigm:
         if tag not in seen_tags:
             seen_tags[tag] = tags
             tags += 1
-    if form not in paradigms:
-        paradigms[form] = tuple([(suff, seen_tags[tag], pref) for suff, tag, pref in paradigm])
-    if form in seen_paradigms:
-        print stem,'{',', '.join(form),'}'
+    if paradigm not in seen_paradigms:
+        seen_paradigms[paradigm] = paradigms
+        paradigms += 1
+    stems.append ((seen_paradigms[paradigm], stem));
+
+print 'paradigms: ', paradigms
+
+import sqlite3
+
+conn = sqlite3.connect('opencorpora.sqlite')
+conn.text_factory = str
+conn.execute('CREATE TABLE form (rule integer, suffix text, tag text)')
+conn.execute('CREATE TABLE stem (rule integer, prefix text)')
+
+for para, rule in seen_paradigms.items():
+    for suff, tag, pref in para:
+        conn.execute('INSERT INTO form VALUES(?,?,?)', (rule,suff,tag))
+for rule,stem in stems:
+    conn.execute('INSERT INTO stem VALUES(?,?)', (rule,stem))
+
+conn.commit()
+conn.close()
