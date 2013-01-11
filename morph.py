@@ -149,4 +149,4 @@ class MorphInfo:
         self.tag=tag
 
     def __repr__(self):
-        return ', '.join(map(lambda w: self.tags.get(w, w), self.tag.split(',')))
+        return ', '.join(map(lambda w: self.tags.get(w, w), self.tag.replace(' ',',').split(',')))
