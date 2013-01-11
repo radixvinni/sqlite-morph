@@ -26,14 +26,20 @@ sed -i '/^.*?/d' forms
 sed -i 's/#//g' forms
 
 # делаем список стемов (оснований слов)
-grep -v '{' LexGroup -r > stems        
+grep --exclude="*.md" -v '{' LexGroup -r > stems        
 sed -i 's/^.*lexgroup\.//gI' stems  # удаляем название и путь файла в начале строки
 sed -i 's/#//g' forms
+
+# делаем список окончаний нормальных форм
+grep --exclude="*.md" '{' LexGroup -r > norm.tmp        
+sed -i 's/^.*lexgroup\.//gI' norm.tmp  # удаляем название и путь файла в начале строки
+sed -i 's/:/ /gI' norm.tmp  # удаляем название и путь файла в начале строки
+cut -f1,3 -d" " norm.tmp > norm
+sed -i 's/#//g' norm
 
 #теперь собственно sqlite
 if [ -f ru.sqlite ];then rm ru.sqlite; fi
 sqlite3 -init init.sql ru.sqlite ''
 
 #кончил - вытри за собой
-rm stems
-rm forms
+rm stems forms norm.tmp norm

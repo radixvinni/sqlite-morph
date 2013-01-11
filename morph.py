@@ -18,7 +18,7 @@ class MorphDict:
         item = self.conn.execute(self.GET_ITEM, (key,)).fetchone()
         if item is None:
             raise KeyError('Word not found')
-        return item[0]
+        return MorphInfo(item[0])
 
     def replace(self, key):
         item = self.conn.execute(self.SIMILAR, (key,)).fetchone()
@@ -145,8 +145,8 @@ class MorphInfo:
     "Af-p": "форма после предлога", 
     "Inmx": "может использоваться как неодушевлённое", 
     "Vpre": "Вариант предлога ( со, подо, ...)"}
-    def __init__(self, tag=0):
+    def __init__(self, tag=''):
         self.tag=tag
 
     def __repr__(self):
-        return self.tag
+        return ', '.join(map(lambda w: self.tags.get(w, w), self.tag.split(',')))

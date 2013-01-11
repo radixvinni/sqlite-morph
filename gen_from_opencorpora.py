@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 from parse import load_json_or_xml_dict
 import os
-
+LEMMA_PREFIXES = ["", "по", "наи"]
 def _join_lemmas(lemmas, links):
     """
     Combine linked lemmas to single lemma.
@@ -87,12 +87,12 @@ def _to_paradigm(lemma):
     """
     forms, tags = list(zip(*lemma))
     prefixes = [''] * len(tags)
-    stem = os.path.commonprefix(forms)
-    if stem == "":
+    stem=forms[0]
+    if len(forms)>1:
         stem = longest_common_substring(forms)
         prefixes = [form[:form.index(stem)] for form in forms]
         if any(pref not in LEMMA_PREFIXES for pref in prefixes):
-            stem = ""
+            stem = os.path.commonprefix(forms)
             prefixes = [''] * len(tags)
     suffixes = (
         form[len(pref)+len(stem):]
@@ -103,6 +103,7 @@ def _to_paradigm(lemma):
 LEMMA_PREFIXES = ["", "по", "наи"]
 print 'opening dict...'
 parsed_dict = load_json_or_xml_dict('dict.opcorpora.xml')
+print 'lemmas: ', len(parsed_dict.lemmas)
 lemmas = _join_lemmas(parsed_dict.lemmas, parsed_dict.links)
 #lemmas = parsed_dict.lemmas.values()
 seen_tags = dict()
@@ -137,6 +138,9 @@ for para, rule in seen_paradigms.items():
         conn.execute('INSERT INTO form VALUES(?,?,?)', (rule,suff,tag))
 for rule,stem in stems:
     conn.execute('INSERT INTO stem VALUES(?,?)', (rule,stem))
+
+conn.execute('CREATE TABLE norm(rule integer, suffix text)')
+conn.execute('insert into norm select rule, suffix from form f where rowid = (select rowid from form g where g.rule=f.rule limit 1)')
 
 conn.commit()
 conn.close()
