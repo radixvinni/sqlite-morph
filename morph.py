@@ -8,8 +8,8 @@ class MorphDict:
     def __init__(self, db='ru.sqlite'):
         self.conn = sqlite3.connect(db)
         self.conn.text_factory = str
-        self.GET_ITEM = 'SELECT form.tag FROM stem join form ON form.rule=stem.rule WHERE prefix||suffix = ?'
-        self.GET_ITEM_FAST = 'SELECT form.tag FROM form JOIN stem ON stem.rule = form.rule WHERE form.rowid = (SELECT form FROM word WHERE word = ?)'
+        self.GET_ITEM = 'SELECT form.rule||","||form.tag FROM stem join form ON form.rule=stem.rule WHERE prefix||suffix = ?'
+        self.GET_ITEM_FAST = 'SELECT form.rule||","||form.tag FROM form JOIN stem ON stem.rule = form.rule WHERE form.rowid = (SELECT form FROM word WHERE word = ?)'
         self.ADD_ITEM = 'REPLACE INTO stem (rule, prefix) VALUES (?,?)'
         self.SIMILAR = 'SELECT prefix||suffix FROM form JOIN stem ON stem.rule = form.rule WHERE form.rowid = (SELECT form.rowid FROM stem join form ON form.rule=stem.rule WHERE prefix||suffix = ?) order by random() limit 1'
         self.SIMILAR_FAST = 'SELECT prefix||suffix FROM form JOIN stem ON stem.rule = form.rule WHERE form.rowid = (SELECT form FROM word WHERE word = ?) order by random() limit 1'
