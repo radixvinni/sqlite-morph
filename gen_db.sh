@@ -1,4 +1,6 @@
 #!/bin/sh
+#Преобразование словаря из текстовых файлов в sqlite3
+
 # перекодировка 1251 в utf8 - уже сделал при добавлении в репозитарий
 #find LexGroup -type f|while read i; do iconv -f WINDOWS-1251 -t UTF-8 "$i" >tmp; mv tmp "$i"; done 
 

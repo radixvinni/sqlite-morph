@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""генератор бредовых текстов"""
 from __future__ import unicode_literals
 
 from morph import MorphDict 

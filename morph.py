@@ -1,4 +1,5 @@
 #coding: utf-8
+"""класс морфологического словаря и данных о слове"""
 import sqlite3
 
 class MorphDict:

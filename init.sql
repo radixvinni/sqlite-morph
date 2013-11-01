@@ -1,3 +1,4 @@
+-- Скрипт для gen_db.sh
 CREATE TABLE stem (rule integer, prefix text);
 CREATE TABLE form (rule integer, suffix text);
 CREATE TABLE norm (rule integer, suffix text);

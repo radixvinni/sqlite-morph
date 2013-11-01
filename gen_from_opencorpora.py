@@ -1,4 +1,6 @@
-#coding: utf-8
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""импорт словаря opencorpora из xml в sqlite"""
 from __future__ import unicode_literals
 from parse import load_json_or_xml_dict
 import os
