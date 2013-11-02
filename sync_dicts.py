@@ -30,8 +30,8 @@ def find_similar_oc_rule(words, oc_rules, transform, i, threshold=0.5):
         ocr = oc_rules[(j,tag)]
         rate=len(ocr&words)/len(words)
         if (rate>threshold):
-            if rate < 1:
-                print(i,"->",j,rate)
+            #if rate < 1:
+             #   print(i,"->",j,rate)
             #внимание. i должен давать ограничение на часть речи! особенно если len(rur) маленький.
             if i < 450 and ("VERB" in tag or "INFN" in tag)\
             or i >= 450 and i < 500 and "plur" in tag\
@@ -39,7 +39,7 @@ def find_similar_oc_rule(words, oc_rules, transform, i, threshold=0.5):
             or i >= 600 and i < 750 and ("masc" in tag or "Ms-f" in tag)\
             or i >= 750 and i < 800 and "neut" in tag\
             or i >= 800 and i < 900 and ("ADJ" in tag or "PRT" in tag)\
-            or i >= 900 and i < 950 and "ADJ" not in tag and "VERB" not in tag and "NOUN" not in tag\
+            or i >= 900 and i < 950 and "VERB" not in tag and "NOUN" not in tag\
             or i >= 950 and i < 970 and "anim" in tag\
             or i >= 970 and "NUMR" in tag:
                 try:
@@ -83,7 +83,7 @@ if not os.path.isfile("transform"):
             if i not in transform: 
                 find_similar_oc_rule(rur, oc_rules, transform, i, threshold=0.3)
             if i not in transform: 
-                print(i,"has no analog")
+                print(i,"no match found")
     print("success:", 100* len(transform) / len(rules),"%")
     with open("transform", "w") as outfile: json.dump(transform, outfile, indent=4)
     exit(0)
@@ -96,21 +96,24 @@ for i in transform:
     #надо: контроллировать буквы. 
     # если rufs все начинаются с одной буквы, делать перенос буквы в стем
     #надо: сливать тэги! объединять по j или пересекать, если ничего не найдено. 
-    for j in transform[i]:
-        sufs = oc.execute("SELECT suffix,tag FROM form WHERE rule=?",(j,)).fetchall()
-        sufs_dict=dict(sufs)
-        sufs = set(list(zip(*sufs))[0])
-        rufs = ru.execute("SELECT suffix FROM form WHERE rule=?",(rule,)).fetchall()
-        rufs = set(list(zip(*rufs))[0])
-        total+=len(rufs)
-        good+=len(sufs&rufs)
-        #if len(sufs-rufs): print("oc group",j,"has",sufs-rufs)
-        #if len(rufs-sufs): print("oc group",j,"doesn't have",rufs-sufs)
-        if len(sufs-rufs): print("group",i,"doesn't have",sufs-rufs)
-        if len(rufs-sufs): print("group",i,"has",rufs-sufs)
-        for suff in sufs&rufs:
-            tag = sufs_dict[suff]
-            ru.execute('UPDATE form SET tag=? WHERE rule=? and suffix=?', (tag,rule,suff))
+    if len(transform[i])==1:
+        sufs_dict = oc.execute("SELECT suffix,tag FROM form WHERE rule = ?",(transform[i][0],)).fetchall()
+    else:
+        sufs_dict = oc.execute("SELECT suffix,tag FROM form WHERE rule in "+str(tuple(transform[i]))).fetchall()
+    sufs = set(list(zip(*sufs_dict))[0])
+    rufs = ru.execute("SELECT suffix FROM form WHERE rule=?",(rule,)).fetchall()
+    rufs = set(list(zip(*rufs))[0])
+    total+=len(rufs)
+    good+=len(sufs&rufs)
+    #if len(sufs-rufs): print("oc group",j,"has",sufs-rufs)
+    #if len(rufs-sufs): print("oc group",j,"doesn't have",rufs-sufs)
+    if len(sufs-rufs): print("group",i,"doesn't have",sufs-rufs)
+    if len(rufs-sufs): print("group",i,"has",rufs-sufs)
+    for suff in sufs&rufs:
+        ru.execute('DELETE FROM form WHERE rule=? and suffix=?', (rule,suff))
+    for suff, tag in sufs_dict:
+        if suff in rufs:
+            ru.execute('INSERT INTO form VALUES (?,?,?)',(rule,suff,tag))
 
 print("sccess:",100*good/total,"%")
 ru.commit()
