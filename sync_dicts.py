@@ -83,10 +83,13 @@ if not os.path.isfile("transform"):
             if i not in transform: 
                 find_similar_oc_rule(rur, oc_rules, transform, i, threshold=0.3)
             if i not in transform: 
+                find_similar_oc_rule(rur, oc_rules, transform, i, threshold=0.2)
+            if i not in transform: 
                 print(i,"no match found")
     print("success:", 100* len(transform) / len(rules),"%")
     with open("transform", "w") as outfile: json.dump(transform, outfile, indent=4)
     exit(0)
+
 with open("transform", "r") as infile: transform=json.loads(infile.read())
 print("writing tags")
 good=0
@@ -94,7 +97,7 @@ total=0
 for i in transform:
     rule=int(i)
     #надо: контроллировать буквы. 
-    # если rufs все начинаются с одной буквы, делать перенос буквы в стем
+    # если все формы начинаются с одной буквы, делать перенос буквы в стем
     #надо: сливать тэги! объединять по j или пересекать, если ничего не найдено. 
     if len(transform[i])==1:
         sufs_dict = oc.execute("SELECT suffix,tag FROM form WHERE rule = ?",(transform[i][0],)).fetchall()
@@ -102,7 +105,18 @@ for i in transform:
         sufs_dict = oc.execute("SELECT suffix,tag FROM form WHERE rule in "+str(tuple(transform[i]))).fetchall()
     sufs = set(list(zip(*sufs_dict))[0])
     rufs = ru.execute("SELECT suffix FROM form WHERE rule=?",(rule,)).fetchall()
+    letter=rufs[0][0];
     rufs = set(list(zip(*rufs))[0])
+    while len(letter) and all(len(data) for data in rufs) and all(data[0]==letter[0] for data in rufs):
+            #move letter from forms to stem
+            print ("---moving letter from forms to stem", rufs)
+            ru.execute("UPDATE stem SET prefix = prefix||'%s' WHERE rule = %s" % (letter[0],rule))
+            ru.execute("UPDATE form SET suffix = substr(suffix,2) WHERE rule = ?", (rule,))
+            ru.execute("UPDATE norm SET suffix = substr(suffix,2) WHERE rule = ?", (rule,))
+            rufs = ru.execute("SELECT suffix FROM form WHERE rule=?",(rule,)).fetchall()
+            letter=rufs[0][0];
+            rufs = set(list(zip(*rufs))[0])
+            
     total+=len(rufs)
     good+=len(sufs&rufs)
     #if len(sufs-rufs): print("oc group",j,"has",sufs-rufs)
