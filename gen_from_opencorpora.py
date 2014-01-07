@@ -141,8 +141,8 @@ for para, rule in seen_paradigms.items():
 for rule,stem in stems:
     conn.execute('INSERT INTO stem VALUES(?,?)', (rule,stem))
 
-conn.execute('CREATE TABLE norm(rule integer, suffix text)')
-conn.execute('insert into norm select rule, suffix from form f where rowid = (select rowid from form g where g.rule=f.rule limit 1)')
+conn.execute('CREATE TABLE norm(rule integer, suffix text, tag text)')
+conn.execute('insert into norm select rule, suffix, tag from form f where rowid = (select rowid from form g where g.rule=f.rule limit 1)')
 
 conn.commit()
 conn.close()

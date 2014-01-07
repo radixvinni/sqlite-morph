@@ -4,7 +4,7 @@
 происходит в два захода. на первом строится 
 соответствие между группами сравненением нормальных форм, 
 на втором копируются теги"""
-from __future__ import unicode_literals, division
+from __future__ import unicode_literals, division, print_function
 
 import sqlite3
 ru = sqlite3.connect('ru.sqlite')
@@ -85,7 +85,7 @@ if not os.path.isfile("transform"):
             if i not in transform: 
                 find_similar_oc_rule(rur, oc_rules, transform, i, threshold=0.2)
             if i not in transform: 
-                print(i,"no match found")
+                print(i,"no match found, word count: ",len(rur))
     print("success:", 100* len(transform) / len(rules),"%")
     with open("transform", "w") as outfile: json.dump(transform, outfile, indent=4)
     exit(0)
